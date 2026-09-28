@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Triki UDES - Yeritza Palacio</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#0b0820;--card:rgba(30,22,70,.75);--txt:#e8e4ff;--acc:#8b5cf6;--acc2:#22d3ee;--cell:#1b1545;--line:#3b2f80}
+html,body{min-height:100%}
+*{box-sizing:border-box}
+body{margin:0;color:var(--txt);font-family:"Orbitron","Trebuchet MS",sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px;
+background:radial-gradient(circle at 20% 15%,#2b1a6b 0,transparent 40%),radial-gradient(circle at 80% 80%,#0b4a6b 0,transparent 40%),var(--bg);
+background-attachment:fixed}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.7;
+background-image:radial-gradient(1.5px 1.5px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 90px 120px,#fff,transparent),radial-gradient(2px 2px at 160px 60px,#c4b5fd,transparent),radial-gradient(1px 1px at 60px 180px,#a5f3fc,transparent);
+background-size:200px 200px}
+header,.panel,footer{position:relative}
+header{width:100%;max-width:420px;text-align:center;background:linear-gradient(135deg,#6d28d9,#0ea5e9);border-radius:24px;padding:16px;box-shadow:0 0 24px rgba(139,92,246,.6)}
+header h1{margin:0 0 6px;font-size:1.5rem;letter-spacing:2px}
+header p{margin:2px 0;font-size:.8rem;font-weight:600}
+.panel{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:16px;margin-top:14px;box-shadow:0 0 30px rgba(34,211,238,.15)}
+.stats{display:flex;gap:8px;text-align:center;font-size:.75rem}
+.stat{flex:1;background:var(--cell);border:1px solid var(--line);border-radius:14px;padding:8px}
+.stat b{display:block;font-size:1.4rem;color:var(--acc2)}
+.bar{height:10px;background:var(--cell);border-radius:8px;margin:12px 0;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .4s;box-shadow:0 0 10px var(--acc2)}
+.pick{display:flex;justify-content:center;align-items:center;gap:8px;font-size:.75rem}
+.pick button{font-size:1.5rem;background:var(--cell);border:2px solid var(--line);border-radius:12px;padding:4px 10px;cursor:pointer}
+.pick button.on{border-color:var(--acc2);box-shadow:0 0 12px var(--acc2)}
+#msg{text-align:center;font-weight:700;font-size:.85rem;min-height:1.5em;margin:12px 0}
+#board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.c{aspect-ratio:1;border:2px solid var(--line);border-radius:18px;font-size:2.8rem;cursor:pointer;background:var(--cell);transition:transform .15s}
+.c:hover:not(:disabled){transform:scale(1.06);border-color:var(--acc)}
+.c.win{border-color:var(--acc2);box-shadow:0 0 18px var(--acc2);animation:pop .5s infinite alternate}
+@keyframes pop{to{transform:scale(1.1)}}
+button.btn{margin-top:14px;width:100%;padding:12px;border:none;border-radius:16px;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#0b0820;font-weight:800;font-size:.95rem;cursor:pointer;font-family:inherit}
+footer{margin-top:14px;font-size:.7rem;opacity:.8;text-align:center}
+</style></head>
+<body>
+<header>
+<h1>🪐 Triki ✨</h1>
+<p>Yeritza Tatiana Palacio Carrillo</p>
+<p>Código: 01220371005</p>
+<p>Universidad de Santander - UDES</p>
+</header>
+<div class="panel">
+<div class="stats">
+<div class="stat">Nivel<b id="lvl">1</b></div>
+<div class="stat">Victorias<b id="w">0</b></div>
+<div class="stat">Derrotas<b id="l">0</b></div>
+</div>
+<div class="bar"><i id="pb"></i></div>
+<div class="pick">Tu ficha: <span id="pk"></span></div>
+<div id="msg"></div>
+<div id="board"></div>
+<button class="btn" id="rs">Nueva partida</button>
+</div>
+<footer>Ganas una partida para subir de nivel (máx. nivel 5)</footer>
+<script>
+const SY=["💜","⭐","🪐"];let mine=0;
+const pk=document.getElementById('pk');
+SY.forEach((y,i)=>{const t=document.createElement('button');t.textContent=y;t.onclick=()=>{mine=i;reset()};pk.appendChild(t)});
+const opp=()=>SY.findIndex((_,i)=>i!=mine);
+const SM=[0,.3,.6,.85,1];
+let lvl=1,wins=0,losses=0,b,over;
+const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const el=document.getElementById('board'),msg=document.getElementById('msg');
+const cells=[...Array(9)].map((_,i)=>{const c=document.createElement('button');c.className='c';c.onclick=()=>play(i);el.appendChild(c);return c});
+function winner(s){for(const l of L)if(s[l[0]]&&s[l[0]]==s[l[1]]&&s[l[1]]==s[l[2]])return{p:s[l[0]],l};return null}
+function mm(s,t){const w=winner(s);if(w)return w.p=='O'?1:-1;if(s.every(x=>x))return 0;
+let best=t=='O'?-2:2;for(let i=0;i<9;i++)if(!s[i]){s[i]=t;const v=mm(s,t=='O'?'X':'O');s[i]=null;best=t=='O'?Math.max(best,v):Math.min(best,v)}return best}
+function ai(){const free=b.map((v,i)=>v?null:i).filter(v=>v!==null);
+if(Math.random()>SM[lvl-1])return free[Math.floor(Math.random()*free.length)];
+let bs=-2,mv=[];for(const i of free){b[i]='O';const v=mm(b,'X');b[i]=null;if(v>bs){bs=v;mv=[i]}else if(v==bs)mv.push(i)}
+return mv[Math.floor(Math.random()*mv.length)]}
+function draw(){cells.forEach((c,i)=>{c.textContent=b[i]=='X'?SY[mine]:b[i]=='O'?SY[opp()]:'';c.className='c '+(b[i]||'');c.disabled=over||!!b[i]});
+document.getElementById('lvl').textContent=lvl;document.getElementById('w').textContent=wins;document.getElementById('l').textContent=losses;
+document.getElementById('pb').style.width=(lvl/5*100)+'%';[...pk.children].forEach((t,i)=>t.className=i==mine?'on':'')}
+function end(){const w=winner(b);over=true;
+if(w){w.l.forEach(i=>cells[i].classList.add('win'));
+if(w.p=='X'){wins++;if(lvl<5){lvl++;msg.textContent='🎉 ¡Ganaste! Subes al nivel '+lvl+''}else msg.textContent='🏆 ¡Eres la Maestra del Triki!'}
+else{losses++;msg.textContent='😅 Perdiste, ¡inténtalo de nuevo!'}}
+else msg.textContent='🤝 Empate, ¡vuelve a intentarlo!';
+draw();cells.forEach(c=>c.disabled=true);if(w)w.l.forEach(i=>cells[i].classList.add('win'))}
+function play(i){if(over||b[i])return;b[i]='X';if(winner(b)||b.every(x=>x))return end();
+b[ai()]='O';if(winner(b)||b.every(x=>x))return end();draw()}
+function reset(){b=Array(9).fill(null);over=false;msg.textContent='Tu turno 🚀';draw()}
+document.getElementById('rs').onclick=reset;reset();
+</script></body></html>
